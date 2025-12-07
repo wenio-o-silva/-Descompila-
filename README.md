@@ -1,4 +1,4 @@
-# 📘 <Descompila> — MVP
+# 📘 Descompila — MVP
 
 O **Descompila** é um sistema inicial para gerenciamento e resolução de dúvidas acadêmicas, desenvolvido para a disciplina **Gerenciamento de Projeto de Software**.  
 O MVP valida o fluxo básico entre **aluno → dúvida → professor → resposta**, servindo como base para evolução futura.
