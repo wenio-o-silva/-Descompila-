@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-top: 40px;
+    }
+
+    .box {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      background: #f9f9f9;
+    }
+
+    .questao {
+      border: 1px solid #ddd;
+      background: #fff;
+      margin-top: 10px;
+      padding: 15px;
+      border-radius: 5px;
+    }
+
+    textarea {
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+
+    .resposta {
+      background: #f1f1f1;
+      padding: 8px;
+      margin-top: 8px;
+      border-left: 3px solid #4CAF50;
+    }
+  </style>
+</head>
+<body>
+
+    <div style="
+        width: 100%;
+        background: #f5f5f5;
+        padding: 15px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        font-family: Arial, sans-serif;
+        border-bottom: 1px solid #ccc;
+    ">
+
+        <!-- Botão voltar -->
+        <a href="index.html" 
+        style="
+            position: absolute;
+            left: 15px;
+            text-decoration: none;
+            font-size: 22px;
+            color: #333;
+            font-weight: bold;
+        ">
+        ←
+        </a>
+
+        <!-- Título central -->
+        <span style="
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        ">
+            &lt;Descompila&gt;
+        </span>
+        <button onclick="logout()">Sair</button>
+    </div>
+
+  <h1>Dashboard</h1>
+
+  <!-- Resumo -->
+  <div class="box">
+    <h3>Resumo</h3>
+    <p><strong>Pendentes:</strong> <span id="countPendentes">0</span></p>
+    <p><strong>Respondidas:</strong> <span id="countRespondidas">0</span></p>
+  </div>
+
+  <!-- Pendentes -->
+  <h2>Dúvidas Pendentes</h2>
+  <div id="listaPendentes"></div>
+
+  <!-- Respondidas -->
+  <h2>Dúvidas Respondidas</h2>
+  <div id="listaRespondidas"></div>
+
+  <script>
+    function logout() {
+        localStorage.removeItem("descompila_token");
+        window.location.href = "login.html";
+    }
+  </script>
+
+  <script type="module">
+
+    // Bloqueia acesso sem login
+    if (!localStorage.getItem("descompila_token")) {
+        alert("Você precisa fazer login.");
+        window.location.href = "login.html";
+    }
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import {
+      getFirestore, collection, getDocs, addDoc,
+      Timestamp, doc, updateDoc
+    } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZP9kpgHbbD4YRltkwKkPbRgiSfYsG3IQ",
+      authDomain: "descompila-26075.firebaseapp.com",
+      projectId: "descompila-26075",
+      storageBucket: "descompila-26075.firebasestorage.app",
+      messagingSenderId: "530361795070",
+      appId: "1:530361795070:web:5cf755029602e27e2e80af"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const listaPendentesDiv = document.getElementById("listaPendentes");
+    const listaRespondidasDiv = document.getElementById("listaRespondidas");
+    const countPendentes = document.getElementById("countPendentes");
+    const countRespondidas = document.getElementById("countRespondidas");
+
+    function formatarData(data) {
+      const d = data.toDate();
+      const dia = d.getDate();
+      const mes = d.toLocaleString("pt-BR", { month: "long" });
+      const ano = d.getFullYear();
+      const hora = d.getHours().toString().padStart(2, "0");
+      const min = d.getMinutes().toString().padStart(2, "0");
+      return `${dia} de ${mes} de ${ano} às ${hora}:${min}`;
+    }
+
+    // CARREGAR DASHBOARD
+    async function carregarDashboard() {
+      const snap = await getDocs(collection(db, "questoes"));
+
+      let pendentes = 0;
+      let respondidas = 0;
+
+      listaPendentesDiv.innerHTML = "";
+      listaRespondidasDiv.innerHTML = "";
+
+      snap.forEach((docSnap) => {
+        const q = docSnap.data();
+        const id = docSnap.id;
+
+        if (q.answered === true) {
+          respondidas++;
+
+          // Criar card da respondida
+          const div = document.createElement("div");
+          div.className = "questao";
+
+          div.innerHTML = `
+            <h3>${q.title}</h3>
+            <p><strong>Disciplina:</strong> ${q.discipline}</p>
+            <p>${q.description}</p>
+            <p><em>Respondida em: ${formatarData(q.created_at)}</em></p>
+            <div id="respList-${id}">Carregando respostas...</div>
+          `;
+
+          listaRespondidasDiv.appendChild(div);
+
+          // Carregar respostas da subcoleção
+          carregarRespostas(id);
+
+        } else {
+          pendentes++;
+
+          const div = document.createElement("div");
+          div.className = "questao";
+
+          div.innerHTML = `
+            <h3>${q.title}</h3>
+            <p><strong>Disciplina:</strong> ${q.discipline}</p>
+            <p>${q.description}</p>
+            <p><em>Enviada em: ${formatarData(q.created_at)}</em></p>
+
+            <textarea id="resp-${id}" placeholder="Digite a resposta..."></textarea>
+            <button onclick="enviarResposta('${id}')">Enviar resposta</button>
+          `;
+
+          listaPendentesDiv.appendChild(div);
+        }
+      });
+
+      countPendentes.textContent = pendentes;
+      countRespondidas.textContent = respondidas;
+    }
+
+    // CARREGAR RESPOSTAS DAS QUESTÕES RESPONDIDAS
+    async function carregarRespostas(questaoId) {
+      const snap = await getDocs(collection(db, `questoes/${questaoId}/respostas`));
+      const area = document.getElementById(`respList-${questaoId}`);
+
+      area.innerHTML = "";
+
+      snap.forEach((docSnap) => {
+        const r = docSnap.data();
+
+        const div = document.createElement("div");
+        div.className = "resposta";
+
+        div.innerHTML = `
+          <p><strong>Resposta:</strong> ${r.text}</p>
+          <small>${formatarData(r.created_at)}</small>
+        `;
+
+        area.appendChild(div);
+      });
+    }
+
+    // ENVIAR RESPOSTA
+    window.enviarResposta = async function (questaoId) {
+      const campo = document.getElementById(`resp-${questaoId}`);
+      const texto = campo.value.trim();
+
+      if (texto === "") {
+        alert("Digite uma resposta.");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, `questoes/${questaoId}/respostas`), {
+          text: texto,
+          created_at: Timestamp.now()
+        });
+
+        await updateDoc(doc(db, "questoes", questaoId), {
+          answered: true
+        });
+
+        alert("Resposta enviada!");
+        carregarDashboard();
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao enviar resposta.");
+      }
+    };
+
+    carregarDashboard();
+  </script>
+
+</body>
+</html>

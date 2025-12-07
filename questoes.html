@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Criar Dúvida</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    label { display: block; margin-top: 15px; }
+    input, textarea, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      font-size: 15px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+    <div style="
+        width: 100%;
+        background: #f5f5f5;
+        padding: 15px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        font-family: Arial, sans-serif;
+        border-bottom: 1px solid #ccc;
+    ">
+
+        <!-- Botão voltar -->
+        <a href="index.html" 
+        style="
+            position: absolute;
+            left: 15px;
+            text-decoration: none;
+            font-size: 22px;
+            color: #333;
+            font-weight: bold;
+        ">
+        ←
+        </a>
+
+        <!-- Título central -->
+        <span style="
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        ">
+            &lt;Descompila&gt;
+        </span>
+
+    </div>
+
+  <h2>Criar nova dúvida</h2>
+
+  <form id="duvidaForm">
+    <label>Título da dúvida:</label>
+    <input type="text" id="title" required>
+
+    <label>Descrição:</label>
+    <textarea id="description" rows="5" required></textarea>
+
+    <label>Disciplina:</label>
+    <input type="text" id="discipline" required>
+
+    <button type="submit">Enviar</button>
+  </form>
+
+  <script type="module">
+    // IMPORT FIREBASE
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+    // SUA CONFIGURAÇÃO (projeto novo)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZP9kpgHbbD4YRltkwKkPbRgiSfYsG3IQ",
+      authDomain: "descompila-26075.firebaseapp.com",
+      projectId: "descompila-26075",
+      storageBucket: "descompila-26075.firebasestorage.app",
+      messagingSenderId: "530361795070",
+      appId: "1:530361795070:web:5cf755029602e27e2e80af"
+    };
+
+    // Inicializa Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Envio do formulário
+    document.getElementById("duvidaForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById("title").value;
+      const description = document.getElementById("description").value;
+      const discipline = document.getElementById("discipline").value;
+
+      try {
+        await addDoc(collection(db, "questoes"), {
+          title,
+          description,
+          discipline,
+          created_at: Timestamp.now(),
+          answered: false   
+        });
+
+        alert("Dúvida enviada com sucesso!");
+        e.target.reset();
+        window.location.href = "index.html";
+      } catch (error) {
+        console.error("Erro ao salvar", error);
+        alert("Erro ao salvar. Veja o console.");
+      }
+    });
+  </script>
+
+</body>
+</html>

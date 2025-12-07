@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login - Descompila</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 400px;
+      margin: 80px auto;
+      padding: 20px;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      font-size: 16px;
+    }
+
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 5px;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    .erro {
+      color: red;
+      margin-top: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+    <div style="
+        width: 100%;
+        background: #f5f5f5;
+        padding: 15px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        font-family: Arial, sans-serif;
+        border-bottom: 1px solid #ccc;
+    ">
+
+        <!-- Botão voltar -->
+        <a href="index.html" 
+        style="
+            position: absolute;
+            left: 15px;
+            text-decoration: none;
+            font-size: 22px;
+            color: #333;
+            font-weight: bold;
+        ">
+        ←
+        </a>
+
+        <!-- Título central -->
+        <span style="
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        ">
+            &lt;Descompila&gt;
+        </span>
+
+    </div>
+
+  <h2>Login <Descompila></h2>
+
+  <label>Email</label>
+  <input type="email" id="email" placeholder="professor@exemplo.com" />
+
+  <label>Senha</label>
+  <input type="password" id="senha" placeholder="Digite sua senha" />
+
+  <button id="btnLogin">Entrar</button>
+
+  <div class="erro" id="erro"></div>
+
+  <script type="module">
+
+    // Verifica se já está logado
+    if (localStorage.getItem("descompila_token")) {
+        window.location.href = "dashboard.html";
+    }    
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import {
+      getFirestore, collection, query, where, getDocs
+    } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZP9kpgHbbD4YRltkwKkPbRgiSfYsG3IQ",
+      authDomain: "descompila-26075.firebaseapp.com",
+      projectId: "descompila-26075",
+      storageBucket: "descompila-26075.firebasestorage.app",
+      messagingSenderId: "530361795070",
+      appId: "1:530361795070:web:5cf755029602e27e2e80af"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    document.getElementById("btnLogin").onclick = async () => {
+      const email = document.getElementById("email").value.trim();
+      const senha = document.getElementById("senha").value.trim();
+      const erroDiv = document.getElementById("erro");
+
+      erroDiv.textContent = "";
+
+      if (email === "" || senha === "") {
+        erroDiv.textContent = "Preencha email e senha.";
+        return;
+      }
+
+      try {
+        // Busca professor pelo campo name (email)
+        const q = query(
+          collection(db, "Professor"),
+          where("email", "==", email)
+        );
+
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+          erroDiv.textContent = "Email não encontrado.";
+          return;
+        }
+
+        let professor = null;
+        snap.forEach((doc) => professor = doc.data());
+
+        // Comparar senha
+        if (professor.password !== senha) {
+          erroDiv.textContent = "Senha incorreta.";
+          return;
+        }
+
+        // Criar token simples
+        const token = Math.random().toString(36).substring(2);
+
+        // Salvar no navegador
+        localStorage.setItem("descompila_token", token);
+
+        // Redirecionar
+        window.location.href = "dashboard.html";
+
+      } catch (e) {
+        console.error(e);
+        erroDiv.textContent = "Erro ao fazer login.";
+      }
+    };
+  </script>
+
+</body>
+</html>

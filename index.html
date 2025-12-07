@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Lista de Dúvidas</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .topo {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 25px;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background: #f9f9f9;
+    }
+
+    .topo a {
+      text-decoration: none;
+    }
+
+    .topo p {
+      font-size: 16px;
+      margin: 0;
+    }
+
+    .topo button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .questao {
+      border: 1px solid #ccc;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .respostas {
+      background: #f1f1f1;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+    }
+
+    .resposta-item {
+      border-bottom: 1px solid #ccc;
+      padding: 5px 0;
+    }
+
+    .resposta-item:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+
+    <div style="
+        width: 100%;
+        background: #f5f5f5;
+        padding: 15px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        font-family: Arial, sans-serif;
+        border-bottom: 1px solid #ccc;
+    ">
+
+        <!-- Título central -->
+        <span style="
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        ">
+            &lt;Descompila&gt;
+        </span>
+
+        <!-- Botão Login à direita -->
+        <a href="login.html"
+        style="
+            position: absolute;
+            right: 15px;
+            text-decoration: none;
+        ">
+        <button style="
+            padding: 6px 14px;
+            font-size: 14px;
+            cursor: pointer;
+        ">
+            Login
+        </button>
+        </a>
+
+    </div>
+
+
+  <h2>Dúvidas cadastradas</h2>
+
+  <!-- NOVA SEÇÃO PARA CRIAR QUESTÃO -->
+  <div class="topo">
+    <p>Um bug na mente? Descompile aqui</p>
+    <a href="questoes.html">
+      <button>➕</button>
+    </a>
+  </div>
+
+  <div id="lista"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import {
+      getFirestore, collection, getDocs
+    } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCZP9kpgHbbD4YRltkwKkPbRgiSfYsG3IQ",
+      authDomain: "descompila-26075.firebaseapp.com",
+      projectId: "descompila-26075",
+      storageBucket: "descompila-26075.firebasestorage.app",
+      messagingSenderId: "530361795070",
+      appId: "1:530361795070:web:5cf755029602e27e2e80af"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const listaDiv = document.getElementById("lista");
+
+    function formatarData(data) {
+      if (typeof data === "string") return data;
+
+      const d = data.toDate();
+      const dia = d.getDate();
+      const mes = d.toLocaleString("pt-BR", { month: "long" });
+      const ano = d.getFullYear();
+      const hora = d.getHours().toString().padStart(2, "0");
+      const min = d.getMinutes().toString().padStart(2, "0");
+
+      return `${dia} de ${mes} de ${ano} às ${hora}:${min}`;
+    }
+
+    async function carregarQuestoes() {
+      listaDiv.innerHTML = "Carregando dúvidas...";
+
+      const snap = await getDocs(collection(db, "questoes"));
+      listaDiv.innerHTML = "";
+
+      snap.forEach((docSnap) => {
+        const q = docSnap.data();
+        const id = docSnap.id;
+
+        const div = document.createElement("div");
+        div.className = "questao";
+        div.innerHTML = `
+          <h3>${q.title}</h3>
+          <p><strong>Disciplina:</strong> ${q.discipline}</p>
+          <p>${q.description}</p>
+          <p><em>Criada em: ${formatarData(q.created_at)}</em></p>
+          <button onclick="verRespostas('${id}', this)">Ver respostas</button>
+          <div class="respostas" id="resp-${id}" style="display:none;"></div>
+        `;
+
+        listaDiv.appendChild(div);
+      });
+    }
+
+    window.verRespostas = async function (questaoId, botao) {
+      const area = document.getElementById("resp-" + questaoId);
+
+      if (area.style.display === "block") {
+        area.style.display = "none";
+        botao.textContent = "Ver respostas";
+        return;
+      }
+
+      botao.textContent = "Carregando...";
+
+      const subCol = collection(db, `questoes/${questaoId}/respostas`);
+      const snap = await getDocs(subCol);
+
+      area.innerHTML = "";
+
+      if (snap.empty) {
+        area.innerHTML = "<p>Nenhuma resposta ainda.</p>";
+      } else {
+        snap.forEach((docSnap) => {
+          const r = docSnap.data();
+
+          const div = document.createElement("div");
+          div.className = "resposta-item";
+          div.innerHTML = `
+            <p><strong>Resposta:</strong> ${r.text}</p>
+            <small>${formatarData(r.created_at)}</small>
+          `;
+
+          area.appendChild(div);
+        });
+      }
+
+      area.style.display = "block";
+      botao.textContent = "Ocultar respostas";
+    };
+
+    carregarQuestoes();
+  </script>
+
+</body>
+</html>
